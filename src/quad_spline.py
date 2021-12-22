@@ -9,7 +9,7 @@ Created on Mon Nov 22 23:52:13 2021
 # -This program attemps to calculate the coefficients of a cuadratic periodic 
 #  spline given a set of points.
 
-from numpy import *
+from pylab import *
 from numpy.linalg import *
 
 # -coef_quad_spline returns the coefficients of our spline.
@@ -17,8 +17,8 @@ from numpy.linalg import *
 def coef_quad_spline(u, v):
     n = min(len(u),len(v))       # -In case of having len(u) != len(v).
     m = n-1                      # -Number of coeficients to return.
-    A = zeros((2*m, 2*m))        # -Initializing our linear sistem with
-    b = zeros(2*m)               #  zeros.
+    A = zeros((2*m, 2*m), float)        # -Initializing our linear sistem with
+    b = zeros(2*m, float)               #  zeros.
     
     # -Creating our linear sistem.
     # -Using the b_i(u_{i+1} - u_i) + c_i(u_{i+1} - u_i)^2 = v_{i+1} - v_i
@@ -53,13 +53,61 @@ def coef_quad_spline(u, v):
     
     # -Solving our linear sistem.
     x = solve(A,b)
+    
+    # -This is just to show our results properly.
+    y = zeros((m,3), float)
+    for i in range(m):
+        y[i][0] = v[i]
+        y[i][1] = x[i]
+        y[i][2] = x[i+m]
 
-    return x
+    return y
 
-u = list([0.0, pi/2.0, 2.0*pi])
+
+def eval_quad_spline(u, coef, x):
+    n = len(x)
+    m = len(u)
+    y = zeros(n)
+    
+    for i in range(n):
+        if x[i] < u[0] or x[i] > u[m-1]:
+            continue
+        for j in range(1,m):
+            if u[j] > x[i]:
+                z = x[i]-u[j-1]
+                y[i] = coef[j-1][0]+coef[j-1][1]*z+coef[j-1][2]*z**2
+                break
+        if u[m-1] == x[i]:
+            y[i] = coef[0][0]
+            
+    return y 
+    
+        
+
+u = list([-5.0, pi/2.0, 2.0*pi])
 v = list([-1.0, 4.0, -1.0])
 
+coef = coef_quad_spline(u, v)
+x = linspace(-5.,2.*pi,100)
+y = eval_quad_spline(u, coef, x)
 
-x = coef_quad_spline(u, v)
-print(x)
+plot(x,y,'-',lw=1,color='b')
+grid(True)
+show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
          
