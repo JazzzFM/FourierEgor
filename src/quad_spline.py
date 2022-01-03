@@ -14,6 +14,7 @@ from numpy.linalg import *
 
 # -coef_quad_spline returns the coefficients of our spline.
 # -'u' and 'v' are arrays withc together represents the points nedeed.
+"""
 def coef_quad_spline(u, v):
     n = min(len(u),len(v))       # -In case of having len(u) != len(v).
     m = n-1                      # -Number of coeficients to return.
@@ -67,6 +68,45 @@ def coef_quad_spline(u, v):
         y[i][2] = x[i+m]
 
     return y
+"""
+
+def sumalt(z, r, star, stop):
+    result = 0
+    for i in range(star, stop+1):
+        result += (-1)**(i+r)*z[i]
+        
+    return result
+
+
+def coef_quad_spline(u, v):
+    m = len(u)-1
+    w = zeros(m,float)
+    y = zeros(m,float)
+    
+    for i in range(m):
+        w[i] = u[i+1]-u[i]
+        y[i] = v[i+1]-v[i]
+    
+    z = y/w
+    coef = zeros((m,3), float)
+    const = sumalt(z, 0, 0, m-2)
+    for i in range(m-1):
+        coef[i,0] = v[i]
+        coef[i,1] = (-1)**i*z[m-1] + 2.*sumalt(z, -i, i, m-2)\
+            + (-1)**(i+1)*const
+    
+    coef[m-1,0] = v[m-1]
+    coef[m-1,1] = z[m-1]-const
+    
+    for i in range(m-2):
+        coef[i,2] = ((-1)**(i+1)*z[m-1]-z[i] + 2.*sumalt(z,-i-1,i+1,m-2)\
+                     + (-1)**(i)*const)/w[i]
+
+    coef[m-2,2] = (z[m-1]-z[m-2] - const)/w[m-2]
+    coef[m-1,2] = const/w[m-1]
+
+    return coef        
+
 
 # -eval_quad_spline function evaluates a quadratic spline over a vector x.
 # -u isa vector with the partition of the domain.
@@ -96,15 +136,18 @@ def eval_quad_spline(u, coef, x):
     
         
 
-u = list([0.0, pi/2.0, 3.*pi/2., 2.0*pi])
-v = list([-1.0, 4.0, 4.0, -1.0])
-#u = list([0., pi/2.0, 2.0*pi])
-#v = list([-1., 4., -1.])
+#u = list([0.0, pi/2.0, 3.*pi/2., 2.0*pi])
+#v = list([-1.0, 4.0, 4.0, -1.0])
+#u = list([0., pi/3.0, 2.0*pi/3., 4.*pi/3., 5.*pi/3., 2*pi])
+#v = list([-1., 4., 6, 6, 4, -1.])
+#u = list([0., pi/4., pi/2., 3.*pi/4., 5.*pi/4., 3.*pi/2., 7.*pi/4., 2.*pi])
+#v = list([-1., 4., 6., 8., 8., 6., 4., -1.])
+u = list([0., pi/5., 2.*pi/5., 3.*pi/5., 4.*pi/5., 6.*pi/5., 7.*pi/5.,\
+          8.*pi/5., 9.*pi/5, 2*pi])
+v = list([-1., 4., 6., 8.,10,10, 8., 6., 4., -1.])
 
 coef = coef_quad_spline(u, v)
-x = linspace(0.,2.*pi,100)
-#coef = array([[  0.0, -10./pi    , -40/(3.*pi*pi)],\
-#              [pi/2., 10./(3.*pi), 0.0        ]])
+print(coef)
 x = linspace(0., 2.*pi, 100)
 y = eval_quad_spline(u, coef, x)
 
