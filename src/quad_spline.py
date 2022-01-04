@@ -14,8 +14,7 @@ from numpy.linalg import *
 
 # -coef_quad_spline returns the coefficients of our spline.
 # -'u' and 'v' are arrays withc together represents the points nedeed.
-"""
-def coef_quad_spline(u, v):
+def coef_quad_spline2(u, v):
     n = min(len(u),len(v))       # -In case of having len(u) != len(v).
     m = n-1                      # -Number of coeficients to return.
     A = zeros((2*m, 2*m), float)        # -Initializing our linear sistem with
@@ -68,7 +67,7 @@ def coef_quad_spline(u, v):
         y[i][2] = x[i+m]
 
     return y
-"""
+
 
 def sumalt(z, r, star, stop):
     result = 0
@@ -136,18 +135,24 @@ def eval_quad_spline(u, coef, x):
     
         
 
-#u = list([0.0, pi/2.0, 3.*pi/2., 2.0*pi])
-#v = list([-1.0, 4.0, 4.0, -1.0])
-#u = list([0., pi/3.0, 2.0*pi/3., 4.*pi/3., 5.*pi/3., 2*pi])
-#v = list([-1., 4., 6, 6, 4, -1.])
-#u = list([0., pi/4., pi/2., 3.*pi/4., 5.*pi/4., 3.*pi/2., 7.*pi/4., 2.*pi])
-#v = list([-1., 4., 6., 8., 8., 6., 4., -1.])
-u = list([0., pi/5., 2.*pi/5., 3.*pi/5., 4.*pi/5., 6.*pi/5., 7.*pi/5.,\
-          8.*pi/5., 9.*pi/5, 2*pi])
-v = list([-1., 4., 6., 8.,10,10, 8., 6., 4., -1.])
-
+#u = array([0.0, pi/2.0, 3.*pi/2., 2.0*pi])
+#v = array([-1.0, 4.0, 4.0, -1.0])
+#u = array([0., pi/3.0, 2.0*pi/3., 4.*pi/3., 5.*pi/3., 2*pi])
+#v = array([-1., 4., 6, 6, 4, -1.])
+u = array([0., pi/4., pi/2., 3.*pi/4., 5.*pi/4., 3.*pi/2., 7.*pi/4., 2.*pi])
+v = array([-1., 4., 6., 8., 8., 6., 4., -1.])
+#u = array([0., pi/5., 2.*pi/5., 3.*pi/5., 4.*pi/5., 6.*pi/5., 7.*pi/5.,\
+#          8.*pi/5., 9.*pi/5, 2*pi])
+#v = array([-1., 4., 6., 8.,10,10, 8., 6., 4., -1.])
+"""
 coef = coef_quad_spline(u, v)
-print(coef)
+#coef2 = coef_quad_spline2(u, v)
+
+#print(coef)
+#print(coef2)
+
+#%%
+
 x = linspace(0., 2.*pi, 100)
 y = eval_quad_spline(u, coef, x)
 
@@ -161,3 +166,72 @@ plot(u,v,'.',lw=2,color='r')
 plot(x,y,'-',lw=1,color='b')
 grid(True)
 show()
+"""
+
+#%%
+
+def single_fourier_coef(u,coef,k):
+    m = len(u)
+    a = squeeze(coef[:,0])
+    b = squeeze(coef[:,1])
+    c = squeeze(coef[:,2])
+    
+    u1 = u[0:m-1]; u2 = u[1:m]
+    w = u2-u1
+    w2 = w*w
+    w3 = w2*w
+    if k==0:
+        Reh_k = sum(a*w + b*w2/2. + c*w3/3.)
+        Reh_k /= 2.*pi
+        return complex(Reh_k, 0.)
+    
+    sinu1u2 = sin(k*u2) - sin(k*u1)
+    cosu1u2 = cos(k*u1) - cos(k*u2)
+    
+    Reh_k = sum(a*sinu1u2 + b*(w*sin(k*u2) - cosu1u2/k)\
+                + c*(w2*sin(k*u2) + 2.*w*cos(k*u2)/k - 2.*sinu1u2/(k*k)))
+    Reh_k /= 2.*pi*k
+    
+    Imh_k = sum(-a*cosu1u2 + b*(w*cos(k*u2)-sinu1u2/k)\
+                + c*(w2*cos(k*u2) - 2.*w*sin(k*u2)/k + 2.*cosu1u2/(4.*k*k)))
+    Imh_k /= 2.*pi*k
+    
+    return complex(Reh_k, Imh_k)
+
+
+def fourier_coef_cuadr_spline(u,v,n):
+    al = zeros(n, dtype=complex)
+    coef = coef_quad_spline(u, v)
+    
+    for k in range(n):
+        al[k] = single_fourier_coef(u, coef, k)
+    
+    return al
+    
+    
+#FC = fourier_coef_cuadr_spline(u, v, 4)
+#print("Coeficientes de fourier:")
+#print(FC)    
+    
+    
+def eval_trig_sum(al, x):
+    y = al[0]*ones(len(x),dtype=complex)
+    
+    n = len(al)
+    for k in range(1,n):
+        coefcos = complex(2.*real(al[k]), 0.)
+        coefsin = complex(0., 2.*imag(al[k]))
+        y = y+coefcos*cos(k*x) + coefsin*sin(k*x)
+        
+    return y
+
+def test_quad_spline_fourier_sum(u,v,n):
+    coef = coef_quad_spline(u, v)
+    xg = linspace(0., 2.*pi, 601)
+    yg = eval_quad_spline(u, coef, xg)
+    al = fourier_coef_cuadr_spline(u, v, n)
+    tg = eval_trig_sum(al, xg)
+    err = max(abs(tg-yg))
+    print(err)
+    
+test_quad_spline_fourier_sum(u, v, 200)
